@@ -17,10 +17,10 @@ pub struct GreetingAccount {
 }
 
 // Declare and export the program's entrypoint
-entrypoint!(process_instructions);
+entrypoint!(process_instruction);
 
 // Contract Implementation
-pub fn process_instructions(
+pub fn process_instruction(
     program_id: &Pubkey, // pubkey of the acct HelloContract was loaded into
     accounts: &[AccountInfo], // the accounts to say hello to
     _instruction_data: &[u8], // ignored in HelloContract
