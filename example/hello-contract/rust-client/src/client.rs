@@ -1,0 +1,144 @@
+use crate::utils;
+use crate::{Error, Result};
+use solana_client::rpc_client::RpcClient;
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::instruction::{AccountMeta, Instruction};
+use solana_sdk::message::Message;
+use solana_sdk::signature::Signer;
+use solana_sdk::signer::keypair::{read_keypair_file, Keypair};
+use solana_sdk::transaction::Transaction;
+
+/// Establishes an RPC conn witht hte solana cluster configured by
+/// `solana config set --url <URL>`. Information about what cluster
+/// has been configured is gleened from the solana config file
+/// `~/.config/solana/cli/config.yml`.
+pub fn establish_conn() -> Result<RpcClient> {
+    let rpc_url = utils::get_rpc_url()?;
+    Ok(RpcClient::new_with_commitment(
+        rpc_url,
+        CommitmentConfig::confirmed(),
+    ))
+}
+
+pub fn get_rent_exempt_balance() -> u64 {
+    let greet_size = utils::get_greeting_data_size()?
+    conn.get_minimum_balance_for_rent_exemption(greet_size)?
+}
+
+/// Determines the amount of lamports that will be required to execute
+/// this smart contract. The minimum balance is calculated assuming
+/// that the user would like to make their account rent exempt.
+///
+/// For more information about rent see the Solana documentation
+/// [here](https://docs.solana.com/implemented-proposals/rent)
+pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
+    let min_balance = get_rent_exempt_balance();
+    
+    let (_, fee_calcalator) = conn.get_recent_blockhash()?;
+    let transaction_fee = fee_calculator.lamports_per_signature * 100;
+
+    Ok(transaction_fee + min_balance)
+}
+
+/// Gets the balance of PLAYER in lamports via a RPC call over
+/// CONN.
+pub fn get_player_balance(player: &Keypair, conn: &RpcClient) -> Resul<u64> {
+    Ok(conn.get_balance(&player.pubkey())?)
+}
+
+/// Requests that AMOUNT lamports are transferred to PLAYER via a RPC
+/// call over CONN.
+///
+/// Airdrops are only available on test networks.
+pub fn request_airdrop(player: &Keypair,
+                       conn: &RpcClient,
+                       amount: u64) -> Result<()> {
+    let sig = conn.request_airdrop(&player.pubkey(), amount)?;
+    loop {
+        let confirmed = conn.confirm_transaction(&sig)?;
+        if confirmed {
+            break;
+        }
+    }
+    Ok(())
+}
+
+/// Loads keypair information from the file located at KEYPAIR_PATH
+/// and then verifies that the loaded keypair information corresponds
+/// to an executable account via CONN. Failure to read the
+/// keypair or the loaded keypair not corresponding to an executable
+/// account will result in an error being returned.
+pub fn get_program(keypair_path: &str, conn: &RpcClient) -> Result<Keypair> {
+    let program_keypair = read_keypair_file(keypair_path).map_err(|e| {
+        Error::InvalidConfig(format!(
+            "failed to read program keypair file ({}): ({})",
+            keypair_path, e
+        ))
+    })?;
+
+    let program_info = conn.get_account(&program_keypair.pubkey())?;
+    if !program_info.executable {
+        return Err(Error::InvalidConfig(format!(
+            "program with keypair ({}) is not executable",
+            keypair_path
+        )));
+    }
+
+    Ok(program_keypair)
+}
+
+/// On Solana, accounts are ways to store data. In order to use our
+/// greeting counter smart contract, we need some way to store the
+/// number of times we have said hello to the contract. To do this,
+/// we create a greeting account and subsequently transfer
+/// ownership of it to the program. This allows the program to write
+/// to that account as it deems fit.
+///
+/// The greeting account has a [derived
+/// address](https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses)
+/// which allows it to own and manage the account. Additionally, the
+/// address being derived means that we can regenerate it when we'd
+/// like, to find the greeting account again later.
+pub fn create_greeting_account(player: &Keypair,
+                               program: &Keypair,
+                               conn: &RpcClient) -> Result<()> {
+    let greeting_pubkey =
+        utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
+
+    if let Err(_) = connection.get_account(&greeting_pubkey) {
+        println!("creating greeting account");
+        let starting_balance = get_rent_exempt_balance();
+
+        // This instruction creates an account with the key
+        // "greeting_pubkey". The created account is owned by the
+        // program. The account is loaded with enough lamports to stop
+        // it from needing to pay rent. The lamports to fund this are
+        // paid by the player.
+        //
+        // It is important that the program owns the created account
+        // because it needs to be able to modify its contents.
+        //
+        // The address of the account created by
+        // create_account_with_seed is the same as the address
+        // generated by utils::get_greeting_public_key. We do this as
+        // opposed to create_account because create_account doesn't
+        // use a derived address.
+        let instruction = solana_sdk::system_instruction::create_account_with_seed(
+            &player.pubkey(),
+            &greeting_pubkey,
+            &player.pubkey(),
+            utils::get_greeting_seed(),
+            starting_balance,
+            utils::get_greeting_data_size()? as u64,
+            &program.pubkey(),
+        );
+
+        let message = Message::new(&[instruction], Some(&player.pubkey()));
+        let transaction =
+            Transaction::new(&[player], message, connection.get_recent_blockhash()?.0);
+        
+        connection.send_and_confirm_transaction(&transaction)?;
+    }
+
+    Ok(())
+}
