@@ -1,6 +1,10 @@
 use borsh::BorshDeserialize;
 use helloworld::{process_instruction, GreetingAccount};
-use solana_program_test::*;
+use solana_program_test::{
+    processor,
+    ProgramTest,
+    tokio,
+};
 use solana_sdk::{
     account::Account,
     instruction::{AccountMeta, Instruction},
