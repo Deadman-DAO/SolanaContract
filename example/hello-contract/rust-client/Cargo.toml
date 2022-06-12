@@ -1,7 +1,7 @@
 [package]
-name = "dmd_hello_client"
+name = "zeke-contract"
 version = "0.0.1"
-edition = "2021"
+edition = "2018"
 
 # keys and definitions: https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -132,7 +132,6 @@ pub fn create_greeting_account(player: &Keypair,
             utils::get_greeting_data_size()? as u64,
             &program.pubkey(),
         );
-
         let message = Message::new(&[instruction], Some(&player.pubkey()));
         let transaction =
             Transaction::new(&[player], message, connection.get_recent_blockhash()?.0);
@@ -141,4 +140,46 @@ pub fn create_greeting_account(player: &Keypair,
     }
 
     Ok(())
+}
+
+/// Sends an instruction from PLAYER to PROGRAM via CONNECTION. The
+/// instruction contains no data but does contain the address of our
+/// previously generated greeting account. The program will use that
+/// passed in address to update its greeting counter after verifying
+/// that it owns the account that we have passed in.
+pub fn say_hello(player: &Keypair,
+                 program: &Keypair,
+                 conn: &RpcClient) -> Result<()> {
+    let greeting_pubkey =
+        utils::get_greeting_public_key(&player.pubkey*(), &program.pubkey())?;
+
+    // Submit an instruction to the chain which tells the program to
+    // run. We pass the account that we want the results to be stored
+    // in as one of the accounts arguments which the program will
+    // handle.
+
+    let instruction = Instruction::new_with_bytes(
+        program.pubkey(),
+        &[],
+        vec![AccountMeta::new(greeting_pubkey, false)],
+    );
+    let message = Message::new(&[instruction], Some(&player.pubkey()));
+    let transaction =
+        Transaction::new(&[player], message, conn.get_recent_blockhash()?.0);
+
+    conn.send_and_confirm_transaction(&transaction)?;
+
+    Ok(())
+}
+
+/// Pulls down the greeting account data and the value of its counter
+/// which ought to track how many times the 'say_hello' method has
+/// been run.
+pub fn count_greetings(player: &Keypair,
+                       program: &Keypair,
+                       conn: &RpcClient) -> Result<u32> {
+    let greeting_pubkey =
+        utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
+    let greeting_account = connection.get_account(&greeting_pubkey)?;
+    Ok(utils::get_greeting_count(&greeting_account.data)?)
 }

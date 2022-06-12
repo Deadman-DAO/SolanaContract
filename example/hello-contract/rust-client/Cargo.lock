@@ -711,18 +711,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dmd_hello_client"
-version = "0.0.1"
-dependencies = [
- "borsh",
- "home",
- "solana-client",
- "solana-sdk",
- "thiserror",
- "yaml-rust",
-]
-
-[[package]]
 name = "ed25519"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4012,6 +4000,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "346d34a236c9d3e5f3b9b74563f238f955bbd05fa0b8b4efa53c130c43982f4c"
 dependencies = [
  "time 0.3.9",
+]
+
+[[package]]
+name = "zeke-contract"
+version = "0.0.1"
+dependencies = [
+ "borsh",
+ "home",
+ "solana-client",
+ "solana-sdk",
+ "thiserror",
+ "yaml-rust",
 ]
 
 [[package]]
