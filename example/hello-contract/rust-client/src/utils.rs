@@ -25,7 +25,7 @@ pub fn get_config() -> Result<yaml_rust::Yaml> {
             )));
         }
     };
-    let config = std::fs::read_to_string(path).map_err(|e| Error:ConfigReadError(e))?;
+    let config = std::fs::read_to_string(path).map_err(|e| Error::ConfigReadError(e))?;
     let mut config = YamlLoader::load_from_str(&config)?;
     match config.len() {
         1 => Ok(config.remove(0)),

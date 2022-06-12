@@ -1,4 +1,4 @@
-use zeke_contract as zc;
+use dmd_contract as dc;
 
 fn main() {
     let args = std::env::args().collect::<Vec<_>>();
@@ -11,23 +11,23 @@ fn main() {
     }
     let keypair_path = &args[1];
 
-    let conn = zc::client::establish_connection().unwrap();
+    let conn = dc::client::establish_conn().unwrap();
     println!(
         "Connected to remote solana node running version ({}).",
         conn.get_version().unwrap()
     );
 
     let balance_requirement =
-        zc::client::get_balance_requirement(&conn).unwrap();
+        dc::client::get_balance_requirement(&conn).unwrap();
 
     println!(
         "({}) lamports are required for this transaction.",
         balance_requirement
     );
 
-    let player = zc::utils::get_player().unwrap();
+    let player = dc::utils::get_player().unwrap();
     let player_balance =
-        zc::client::get_player_balance(&player, &conn).unwrap();
+        dc::client::get_player_balance(&player, &conn).unwrap();
     println!("({}) lamports are owned by player.", player_balance);
 
     if player_balance < balance_requirement {
@@ -36,17 +36,17 @@ fn main() {
             "Player does not own sufficient lamports. Airdropping ({}) lamports.",
             request
         );
-        zc::client::request_airdrop(&player, &conn, request).unwrap();
+        dc::client::request_airdrop(&player, &conn, request).unwrap();
     }
 
-    let program = zc::client::get_program(keypair_path, &conn).unwrap();
+    let program = dc::client::get_program(keypair_path, &conn).unwrap();
 
-    zc::client::create_greeting_account(&player, &program, &conn).unwrap();
+    dc::client::create_greeting_account(&player, &program, &conn).unwrap();
 
-    zc::client::say_hello(&player, &program, &conn).unwrap();
+    dc::client::say_hello(&player, &program, &conn).unwrap();
     
     println!(
         "({}) greetings have been sent.",
-        zc::client::count_greetings(&player, &program, &conn).unwrap()
+        dc::client::count_greetings(&player, &program, &conn).unwrap()
     )
 }

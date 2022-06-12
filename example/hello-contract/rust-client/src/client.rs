@@ -20,9 +20,10 @@ pub fn establish_conn() -> Result<RpcClient> {
     ))
 }
 
-pub fn get_rent_exempt_balance() -> u64 {
-    let greet_size = utils::get_greeting_data_size()?
-    conn.get_minimum_balance_for_rent_exemption(greet_size)?
+pub fn get_rent_exempt_balance(conn: &RpcClient) -> Result<u64> {
+    let greet_size = utils::get_greeting_data_size()?;
+    let min_balance = conn.get_minimum_balance_for_rent_exemption(greet_size)?;
+    Ok(min_balance)
 }
 
 /// Determines the amount of lamports that will be required to execute
@@ -32,9 +33,9 @@ pub fn get_rent_exempt_balance() -> u64 {
 /// For more information about rent see the Solana documentation
 /// [here](https://docs.solana.com/implemented-proposals/rent)
 pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
-    let min_balance = get_rent_exempt_balance();
+    let min_balance = get_rent_exempt_balance(conn).unwrap();
     
-    let (_, fee_calcalator) = conn.get_recent_blockhash()?;
+    let (_, fee_calculator) = conn.get_recent_blockhash()?;
     let transaction_fee = fee_calculator.lamports_per_signature * 100;
 
     Ok(transaction_fee + min_balance)
@@ -42,7 +43,7 @@ pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
 
 /// Gets the balance of PLAYER in lamports via a RPC call over
 /// CONN.
-pub fn get_player_balance(player: &Keypair, conn: &RpcClient) -> Resul<u64> {
+pub fn get_player_balance(player: &Keypair, conn: &RpcClient) -> Result<u64> {
     Ok(conn.get_balance(&player.pubkey())?)
 }
 
@@ -105,9 +106,9 @@ pub fn create_greeting_account(player: &Keypair,
     let greeting_pubkey =
         utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
 
-    if let Err(_) = connection.get_account(&greeting_pubkey) {
+    if let Err(_) = conn.get_account(&greeting_pubkey) {
         println!("creating greeting account");
-        let starting_balance = get_rent_exempt_balance();
+        let starting_balance = get_rent_exempt_balance(conn).unwrap();
 
         // This instruction creates an account with the key
         // "greeting_pubkey". The created account is owned by the
@@ -134,9 +135,9 @@ pub fn create_greeting_account(player: &Keypair,
         );
         let message = Message::new(&[instruction], Some(&player.pubkey()));
         let transaction =
-            Transaction::new(&[player], message, connection.get_recent_blockhash()?.0);
+            Transaction::new(&[player], message, conn.get_latest_blockhash()?);
         
-        connection.send_and_confirm_transaction(&transaction)?;
+        conn.send_and_confirm_transaction(&transaction)?;
     }
 
     Ok(())
@@ -151,7 +152,7 @@ pub fn say_hello(player: &Keypair,
                  program: &Keypair,
                  conn: &RpcClient) -> Result<()> {
     let greeting_pubkey =
-        utils::get_greeting_public_key(&player.pubkey*(), &program.pubkey())?;
+        utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
 
     // Submit an instruction to the chain which tells the program to
     // run. We pass the account that we want the results to be stored
@@ -165,7 +166,7 @@ pub fn say_hello(player: &Keypair,
     );
     let message = Message::new(&[instruction], Some(&player.pubkey()));
     let transaction =
-        Transaction::new(&[player], message, conn.get_recent_blockhash()?.0);
+        Transaction::new(&[player], message, conn.get_latest_blockhash()?);
 
     conn.send_and_confirm_transaction(&transaction)?;
 
@@ -180,6 +181,6 @@ pub fn count_greetings(player: &Keypair,
                        conn: &RpcClient) -> Result<u32> {
     let greeting_pubkey =
         utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
-    let greeting_account = connection.get_account(&greeting_pubkey)?;
+    let greeting_account = conn.get_account(&greeting_pubkey)?;
     Ok(utils::get_greeting_count(&greeting_account.data)?)
 }
