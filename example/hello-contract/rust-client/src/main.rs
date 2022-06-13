@@ -4,7 +4,7 @@ fn main() {
     let args = std::env::args().collect::<Vec<_>>();
     if args.len() != 2 {
         eprintln!(
-            "usage: {} <pat to solana hello world example program keypair>",
+            "usage: {} <path to solana hello world example program keypair>",
             args[0]
         );
         std::process::exit(-1);
