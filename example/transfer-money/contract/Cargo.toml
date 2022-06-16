@@ -12,14 +12,14 @@ edition = "2021"
 no-entrypoint = []
 
 [dependencies]
-# borsh = "0.9.3"
-# borsh-derive = "0.9.3"
-# solana-program = "~1.10.24"
+borsh = "0.9.3"
+borsh-derive = "0.9.3"
+solana-program = "~1.10.24"
 
 [dev-dependencies]
-# solana-program-test = "~1.10.24"
-# solana-sdk = "~1.10.24"
+solana-program-test = "~1.10.24"
+solana-sdk = "~1.10.24"
 
 [lib]
-name = "demo_transfer"
+name = "transfercontract"
 crate-type = ["cdylib", "lib"]
