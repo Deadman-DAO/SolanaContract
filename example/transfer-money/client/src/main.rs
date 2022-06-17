@@ -31,7 +31,7 @@ fn main() {
     println!("({}) lamports are owned by player.", player_balance);
 
     if player_balance < balance_requirement {
-        let request = balance_requirement - player_balance;
+       let request = balance_requirement - player_balance;
         println!(
             "Player does not own sufficient lamports. Airdropping ({}) lamports.",
             request

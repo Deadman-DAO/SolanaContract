@@ -8,10 +8,8 @@ use solana_sdk::signature::Signer;
 use solana_sdk::signer::keypair::{read_keypair_file, Keypair};
 use solana_sdk::transaction::Transaction;
 
-/// Establishes an RPC conn witht hte solana cluster configured by
-/// `solana config set --url <URL>`. Information about what cluster
-/// has been configured is gleened from the solana config file
-/// `~/.config/solana/cli/config.yml`.
+/// Establishes an RPC conn. See `solana config set --url <URL>`.
+/// See the solana config file `~/.config/solana/cli/config.yml`.
 pub fn establish_conn() -> Result<RpcClient> {
     let rpc_url = utils::get_rpc_url()?;
     Ok(RpcClient::new_with_commitment(
@@ -20,18 +18,17 @@ pub fn establish_conn() -> Result<RpcClient> {
     ))
 }
 
+/// Solana charges rent, but not if you have enough in the account
+/// to pay for two years of rent.
+/// See: https://docs.solana.com/implemented-proposals/rent
 pub fn get_rent_exempt_balance(conn: &RpcClient) -> Result<u64> {
     let greet_size = utils::get_greeting_data_size()?;
-    let min_balance = conn.get_minimum_balance_for_rent_exemption(greet_size)?;
+    let min_balance =
+        conn.get_minimum_balance_for_rent_exemption(greet_size)?;
     Ok(min_balance)
 }
 
-/// Determines the amount of lamports that will be required to execute
-/// this smart contract. The minimum balance is calculated assuming
-/// that the user would like to make their account rent exempt.
-///
-/// For more information about rent see the Solana documentation
-/// [here](https://docs.solana.com/implemented-proposals/rent)
+/// Calculate execution fee, including balance top-up for rent-free.
 pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
     let min_balance = get_rent_exempt_balance(conn).unwrap();
     
@@ -41,16 +38,13 @@ pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
     Ok(transaction_fee + min_balance)
 }
 
-/// Gets the balance of PLAYER in lamports via a RPC call over
-/// CONN.
-pub fn get_player_balance(player: &Keypair, conn: &RpcClient) -> Result<u64> {
+/// Get balance of PLAYER in lamports via RPC over CONN.
+pub fn get_player_balance(player: &Keypair,
+                          conn: &RpcClient) -> Result<u64> {
     Ok(conn.get_balance(&player.pubkey())?)
 }
 
-/// Requests that AMOUNT lamports are transferred to PLAYER via a RPC
-/// call over CONN.
-///
-/// Airdrops are only available on test networks.
+/// Request for amount ETH airdrop to PLAYER.
 pub fn request_airdrop(player: &Keypair,
                        conn: &RpcClient,
                        amount: u64) -> Result<()> {
@@ -64,39 +58,27 @@ pub fn request_airdrop(player: &Keypair,
     Ok(())
 }
 
-/// Loads keypair information from the file located at KEYPAIR_PATH
-/// and then verifies that the loaded keypair information corresponds
-/// to an executable account via CONN. Failure to read the
-/// keypair or the loaded keypair not corresponding to an executable
-/// account will result in an error being returned.
-pub fn get_program(keypair_path: &str, conn: &RpcClient) -> Result<Keypair> {
-    let program_keypair = read_keypair_file(keypair_path).map_err(|e| {
+/// Loads program keypair from disk, verifies the keypair corresponds
+/// to an executable account. Error on failure.
+pub fn get_program(kp_path: &str,
+                   conn: &RpcClient) -> Result<Keypair> {
+    let program_kp = read_keypair_file(kp_path).map_err(|e| {
         Error::InvalidConfig(format!(
-            "failed to read program keypair file ({}): ({})",
-            keypair_path, e
+            "read fail on program keypair ({}): ({})", kp_path, e
         ))
     })?;
 
-    let program_info = conn.get_account(&program_keypair.pubkey())?;
+    let program_info = conn.get_account(&program_kp.pubkey())?;
     if !program_info.executable {
         return Err(Error::InvalidConfig(format!(
-            "program with keypair ({}) is not executable",
-            keypair_path
+            "keypair ({}) is not executable", kp_path
         )));
     }
 
-    Ok(program_keypair)
+    Ok(program_kp)
 }
 
-/// On Solana, accounts are ways to store data. In order to use our
-/// greeting counter smart contract, we need some way to store the
-/// number of times we have said hello to the contract. To do this,
-/// we create a greeting account and subsequently transfer
-/// ownership of it to the program. This allows the program to write
-/// to that account as it deems fit.
-///
-/// The greeting account has a [derived
-/// address](https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses)
+/// The greeting account has a [derived address](https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses)
 /// which allows it to own and manage the account. Additionally, the
 /// address being derived means that we can regenerate it when we'd
 /// like, to find the greeting account again later.
