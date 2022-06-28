@@ -18,17 +18,38 @@ pub fn establish_conn() -> Result<RpcClient> {
     ))
 }
 
-/// Solana charges rent, but not if you have enough in the account
-/// to pay for two years of rent.
-/// See: https://docs.solana.com/implemented-proposals/rent
-pub fn get_rent_exempt_balance(conn: &RpcClient) -> Result<u64> {
-    let greet_size = utils::get_greeting_data_size()?;
-    let min_balance =
-        conn.get_minimum_balance_for_rent_exemption(greet_size)?;
-    Ok(min_balance)
-}
+// pub fn request_transfer(program: &Keypair,
+//                         source: &Keypair,
+//                         destination: &Pubkey,
+//                         conn: &RpcClient) -> Result<()> {
+//     let greeting_pubkey
+// }
 
-/// Calculate execution fee, including balance top-up for rent-free.
+// pub fn say_hello(player: &Keypair,
+//                  program: &Keypair,
+//                  conn: &RpcClient) -> Result<()> {
+//     let greeting_pubkey =
+//         utils::get_greeting_public_key(&player.pubkey(), &program.pubkey())?;
+//     let instruction = Instruction::new_with_bytes(
+//         program.pubkey(),
+//         &[],
+//         vec![AccountMeta::new(greeting_pubkey, false)],
+//     );
+//     let message = Message::new(&[instruction], Some(&player.pubkey()));
+//     let transaction =
+//         Transaction::new(&[player], message, conn.get_latest_blockhash()?);
+
+//     conn.send_and_confirm_transaction(&transaction)?;
+
+//     Ok(())
+// }
+
+
+// ---------------------------------------------------
+// Code that is not needed for the MVP Client
+// ---------------------------------------------------
+
+/// Calculate execution fee plus balance for rent-free.
 pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
     let min_balance = get_rent_exempt_balance(conn).unwrap();
     
@@ -76,6 +97,20 @@ pub fn get_program(kp_path: &str,
     }
 
     Ok(program_kp)
+}
+
+// -------------------------------------------------------
+// Code That is Still Greeting Coupled
+// -------------------------------------------------------
+
+/// Solana charges rent, but not if you have enough in the account
+/// to pay for two years of rent.
+/// See: https://docs.solana.com/implemented-proposals/rent
+pub fn get_rent_exempt_balance(conn: &RpcClient) -> Result<u64> {
+    let greet_size = utils::get_greeting_data_size()?;
+    let min_balance =
+        conn.get_minimum_balance_for_rent_exemption(greet_size)?;
+    Ok(min_balance)
 }
 
 /// The greeting account has a [derived address](https://docs.solana.com/developing/programming-model/calling-between-programs#program-derived-addresses)

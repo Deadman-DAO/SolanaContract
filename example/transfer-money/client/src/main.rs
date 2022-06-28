@@ -1,34 +1,34 @@
 use transfer_client as dt;
+use solana_sdk::signer::keypair::{Keypair};
+use solana_client::rpc_client::RpcClient;
 
-fn main() {
-    let args = std::env::args().collect::<Vec<_>>();
+fn args_sanity(args: &Vec<String>) {
     if args.len() != 2 {
         eprintln!(
-            "usage: {} <path to solana hello world example program keypair>",
+            "usage: {} <path to program keypair>",
             args[0]
         );
         std::process::exit(-1);
     }
-    let keypair_path = &args[1];
+}
 
+fn connect() -> solana_client::rpc_client::RpcClient {
     let conn = dt::client::establish_conn().unwrap();
     println!(
         "Connected to remote solana node running version ({}).",
         conn.get_version().unwrap()
     );
+    conn
+}
 
-    let balance_requirement =
-        dt::client::get_balance_requirement(&conn).unwrap();
-
-    println!(
-        "({}) lamports are required for this transaction.",
-        balance_requirement
-    );
-
-    let player = dt::utils::get_player().unwrap();
+fn ensure_player_balance(player: &Keypair, conn: &RpcClient) {
     let player_balance =
         dt::client::get_player_balance(&player, &conn).unwrap();
     println!("({}) lamports are owned by player.", player_balance);
+
+    let balance_requirement =
+        dt::client::get_balance_requirement(&conn).unwrap();
+    println!("balance req: ({})", balance_requirement);
 
     if player_balance < balance_requirement {
        let request = balance_requirement - player_balance;
@@ -38,15 +38,30 @@ fn main() {
         );
         dt::client::request_airdrop(&player, &conn, request).unwrap();
     }
+}
 
-    let program = dt::client::get_program(keypair_path, &conn).unwrap();
-
-    dt::client::create_greeting_account(&player, &program, &conn).unwrap();
-
-    dt::client::say_hello(&player, &program, &conn).unwrap();
+fn main() {
+    let args = std::env::args().collect::<Vec<_>>();
+    args_sanity(&args);
+    let keypair_path = &args[1];
     
-    println!(
-        "({}) greetings have been sent.",
-        dt::client::count_greetings(&player, &program, &conn).unwrap()
-    )
+    let conn: RpcClient = connect();
+
+    let player: Keypair = dt::utils::get_player().unwrap();
+
+    ensure_player_balance(&player, &conn);
+
+    let program: Keypair =
+        dt::client::get_program(keypair_path, &conn).unwrap();
+
+    // dt::client::request_transfer(&player, &program, &conn);
+
+    // dt::client::create_greeting_account(&player, &program, &conn).unwrap();
+
+    // dt::client::say_hello(&player, &program, &conn).unwrap();
+    
+    // println!(
+    //     "({}) greetings have been sent.",
+    //     dt::client::count_greetings(&player, &program, &conn).unwrap()
+    // )
 }

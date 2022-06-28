@@ -15,8 +15,8 @@ pub fn process_instruction(
     // Create an iterator to safely reference accounts in the slice
     let account_info_iter = &mut accounts.iter();
 
-    // As part of the program specification the first account is the source
-    // account and the second is the destination account
+    // As part of the program specification the first account is the
+    // source account and the second is the destination account
     let source_info = next_account_info(account_info_iter)?;
     let destination_info = next_account_info(account_info_iter)?;
 
