@@ -1,11 +1,14 @@
 use crate::utils;
 use crate::{Error, Result};
 use solana_client::rpc_client::RpcClient;
+// use solana_client::client_error::ClientError;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::instruction::{AccountMeta, Instruction};
 use solana_sdk::message::Message;
 use solana_sdk::signature::Signer;
+use solana_sdk::signature::Signature;
 use solana_sdk::signer::keypair::{read_keypair_file, Keypair};
+//use solana_program::pubkey::Pubkey;
 use solana_sdk::transaction::Transaction;
 
 /// Establishes an RPC conn. See `solana config set --url <URL>`.
@@ -18,12 +21,40 @@ pub fn establish_conn() -> Result<RpcClient> {
     ))
 }
 
-// pub fn request_transfer(program: &Keypair,
-//                         source: &Keypair,
-//                         destination: &Pubkey,
-//                         conn: &RpcClient) -> Result<()> {
-//     let greeting_pubkey
-// }
+use std::any::type_name;
+
+pub fn type_of<T>(_: T) -> &'static str {
+    type_name::<T>()
+}
+
+pub fn request_transfer(program: &Keypair,
+                        source: &Keypair,
+                        destination: &Keypair,
+                        conn: &RpcClient) -> Result<()> {
+    // create derived wallet
+    // airdrop some coins
+    // get the public key
+    let escrow_wallet_pubkey =
+        utils::get_escrow_wallet_pubkey(&
+    let instruction = Instruction::new_with_bytes(
+        program.pubkey(),
+        &[],
+        vec![AccountMeta::new(source.pubkey(), false),
+             AccountMeta::new(destination.pubkey(), false)],
+    );
+    let message = Message::new(&[instruction], Some(&destination.pubkey()));
+    let transaction =
+        Transaction::new(&[destination], message, conn.get_latest_blockhash()?);
+    println!("about to send");
+    let signature: solana_client::client_error::Result<Signature>
+    // let signature: Result<Signature>
+        = conn.send_and_confirm_transaction(&transaction);
+    println!("{}", type_of(&signature));
+    println!("send complete");
+    println!("{:?}",signature);
+    // println!("I think I sent {}", signature);
+    Ok(())
+}
 
 // pub fn say_hello(player: &Keypair,
 //                  program: &Keypair,
@@ -53,10 +84,10 @@ pub fn establish_conn() -> Result<RpcClient> {
 pub fn get_balance_requirement(conn: &RpcClient) -> Result<u64> {
     let min_balance = get_rent_exempt_balance(conn).unwrap();
     
-    let (_, fee_calculator) = conn.get_recent_blockhash()?;
-    let transaction_fee = fee_calculator.lamports_per_signature * 100;
+    // let (_, fee_calculator) = conn.get_recent_blockhash()?;
+    // let transaction_fee = fee_calculator.lamports_per_signature * 100;
 
-    Ok(transaction_fee + min_balance)
+    Ok(min_balance)
 }
 
 /// Get balance of PLAYER in lamports via RPC over CONN.
