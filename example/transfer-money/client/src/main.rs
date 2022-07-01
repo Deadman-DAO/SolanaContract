@@ -35,7 +35,7 @@ fn main() {
     let program: Keypair =
         dt::client::get_program(program_keypair_path, &conn).unwrap();
 
-    let _result = dt::client::request_transfer(&program, &program, &player, &conn);
+    let _result = dt::client::request_transfer(&program, &player, &conn);
 
     // println!("Result is: {}", result);
 
