@@ -1,6 +1,5 @@
 use crate::{Error, Result};
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signer::keypair::{read_keypair_file, Keypair};
 use yaml_rust::YamlLoader;
 
@@ -63,36 +62,4 @@ pub fn get_player() -> Result<Keypair> {
     read_keypair_file(path).map_err(|e| {
         Error::InvalidConfig(format!("failed to read keypair file ({}): ({})", path, e))
     })
-}
-
-/// Gets the seed used to generate greeting accounts. If you'd like to
-/// force this program to generate a new greeting account and thus
-/// restart the counter, you can change this value.
-pub fn get_greeting_seed() -> &'static str {
-    "hello"
-}
-
-/// Derives and returns the greeting account public key for a given
-/// PLAYER, PROGRAM combination
-pub fn get_greeting_public_key(player: &Pubkey, program: &Pubkey) -> Result<Pubkey> {
-    Ok(Pubkey::create_with_seed(
-        player,
-        get_greeting_seed(),
-        program,
-    )?)
-}
-
-/// Determins and reports the size of greeting data.
-pub fn get_greeting_data_size() -> Result<usize> {
-    let encoded = GreetingSchema { counter: 0 }
-    .try_to_vec()
-        .map_err(|e| Error::SerializationError(e))?;
-    Ok(encoded.len())
-}
-
-/// Deserializes as greeting account and reports the value of its
-/// greeting counter.
-pub fn get_greeting_count(data: &[u8]) -> Result<u32> {
-    let decoded = GreetingSchema::try_from_slice(data).map_err(|e| Error::SerializationError(e))?;
-    Ok(decoded.counter)
 }

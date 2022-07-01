@@ -30,45 +30,8 @@ fn main() {
 
     let player: Keypair = dt::utils::get_player().unwrap();
 
-    ensure_player_balance(&player, &conn);
-
     let program: Keypair =
         dt::client::get_program(program_keypair_path, &conn).unwrap();
 
     let _result = dt::client::request_transfer(&program, &player, &conn);
-
-    // println!("Result is: {}", result);
-
-    // dt::client::create_greeting_account(&player, &program, &conn).unwrap();
-
-    // dt::client::say_hello(&player, &program, &conn).unwrap();
-    
-    // println!(
-    //     "({}) greetings have been sent.",
-    //     dt::client::count_greetings(&player, &program, &conn).unwrap()
-    // )
-}
-
-
-// ------------------------------------------------
-// Not needed for transfer MVP client
-// ------------------------------------------------
-
-fn ensure_player_balance(player: &Keypair, conn: &RpcClient) {
-    let player_balance =
-        dt::client::get_player_balance(&player, &conn).unwrap();
-    println!("({}) lamports are owned by player.", player_balance);
-
-    let balance_requirement =
-        dt::client::get_balance_requirement(&conn).unwrap();
-    println!("balance req: ({})", balance_requirement);
-
-    if player_balance < balance_requirement {
-       let request = balance_requirement - player_balance;
-        println!(
-            "Player does not own sufficient lamports. Airdropping ({}) lamports.",
-            request
-        );
-        dt::client::request_airdrop(&player, &conn, request).unwrap();
-    }
 }
